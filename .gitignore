@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Emacs backup, auto-save, and lock files
+*~
+\#*\#
+.\#*
+
+# Org / Org-roam machine-local state
+.org-id-locations
+org-roam.db
+org-roam.db-shm
+org-roam.db-wal

@@ -1,0 +1,25 @@
+:PROPERTIES:
+:ID:       E130B8DE-85F1-41CF-AEA2-BA23295E85E4
+:END:
+#+title: cmake
+
+* cmake 编译一般c项目
+1.根据文件夹的具体内容编辑 _"CMakeLists.txt"_ 文件,命名不能修改
+2.使用
+#+begin_src
+cmake -S . -B build
+#+end_src 
+创建build内容
+3.运行项目
+#+begin_src 
+cmake --build build
+#+end_src
+or
+#+begin_src 
+make
+#+end_src
+* 在不用west的情况下，只使用cmake编译[[id:C3D918FD-0388-4A37-A64F-87C92A4182B5][Zephyr]]项目
+#+begin_src 
+cmake -G "Ninja" -DBOARD="BOARDNAME"
+#+end_src
+# BOARDNAME stm32h747i_disco/stm32h747xx/m7 指stm32h747i_disco 的 m7 core

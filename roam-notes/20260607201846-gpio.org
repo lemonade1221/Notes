@@ -1,0 +1,210 @@
+:PROPERTIES:
+:ID:       337AF3A1-94A6-4862-A2C7-96C88E373DD1
+:END:
+#+title: GPIO
+* 概念
+GPIO（General-Purpose Input/Output，通用输入输出）是可由软件控制的数字引脚。
+一个 GPIO 通常可以配置为输入、输出、中断输入或复用为 UART、SPI、I2C 等外设功能。
+
+- 高电平和低电平的电压范围由芯片手册决定，不能简单等同于电源电压和 0 V。
+- GPIO 只能提供有限的灌电流、拉电流，驱动 LED、电机、继电器等负载时要确认限流和驱动能力。
+- 引脚电压不得超过芯片允许范围；5 V 信号接入 3.3 V MCU 前要确认引脚是否容忍 5 V。
+- 上电、复位期间引脚状态可能与程序运行后的状态不同，关键控制信号应使用外部上拉或下拉确定默认状态。
+* 输入
+输入模式用于读取外部数字电平。输入引脚为高阻态，几乎不主动向外输出电流。
+** 浮空输入
+引脚没有连接到确定电平，也没有启用上拉或下拉。
+
+- 容易受到噪声干扰，读数可能随机跳变。
+- 只适合外部电路始终能提供明确高低电平的情况。
+** 上拉输入
+通过电阻将引脚弱连接到电源。外部没有驱动时读取为高电平，外部将其接地时读取为低电平。
+
+常用于按键：按键松开为高，按下为低。MCU 内部上拉通常阻值较大，抗干扰要求高时应使用外部上拉。
+** 下拉输入
+通过电阻将引脚弱连接到地。外部没有驱动时读取为低电平，外部连接电源时读取为高电平。
+** 输入中断
+GPIO 可以在电平变化时触发中断，避免程序持续轮询。
+
+- 上升沿：低电平变为高电平
+- 下降沿：高电平变为低电平
+- 双边沿：任一电平变化
+- 电平触发：保持高电平或低电平时触发
+
+中断回调中应只做耗时短、不会阻塞的工作；复杂处理可交给工作队列或线程。
+* 输出
+输出模式由 MCU 主动驱动引脚电平。配置输出时应尽量同时指定初始电平，防止短暂毛刺。
+** 推挽输出
+内部使用两个开关管主动输出高电平或低电平，翻转速度快、驱动能力较强。
+
+- 适合 LED、片选、普通数字控制信号。
+- 不能与另一个推挽输出直接相连，否则两端电平不一致时会产生大电流。
+** 开漏输出
+只能主动输出低电平；需要高电平时关闭输出，由上拉电阻将线路拉高。
+
+- 多个开漏输出可以共享一条线路，只要任一设备输出低电平，线路就是低电平。
+- 常见于 I2C、复位线、不同电压域之间的简单电平转换。
+- 必须有内部或外部上拉电阻；上拉阻值会影响功耗和信号上升时间。
+* 常见问题
+** 按键抖动
+机械按键在按下或松开的瞬间会快速通断多次，可能被识别为多次操作。
+
+常用消抖方法：
+- 软件延时后再次读取，或要求电平稳定一段时间
+- 使用定时器或工作队列延后处理
+- 使用 RC 电路或施密特触发器进行硬件消抖
+** 有效电平
+有效电平表示设备处于“开启”状态时对应的物理电平。
+
+- =GPIO_ACTIVE_HIGH=：逻辑值 1 对应物理高电平
+- =GPIO_ACTIVE_LOW=：逻辑值 1 对应物理低电平
+
+在 Zephyr 中使用 =gpio_pin_set_dt()= 和 =gpio_pin_get_dt()= 时，通常处理的是逻辑值，API 会根据 Devicetree 中的有效电平转换物理电平。
+** 上电安全
+- 使能电源、控制电机、复位等关键引脚应有确定的硬件默认状态。
+- 确认复位阶段、Bootloader 阶段和应用阶段的引脚配置不会产生危险动作。
+- 切换输入、输出或复用功能前，先考虑外部电路正在驱动的状态。
+* 使用
+** [[id:C3D918FD-0388-4A37-A64F-87C92A4182B5][Zephyr]]
+*** 在[[id:495B29B4-3D34-43B4-9B71-293D4DBF4931][prj.conf]]中开启GPIO
+#+begin_src conf
+CONFIG_GPIO=y
+#+end_src
+*** 在 Devicetree Overlay 中描述 GPIO
+推荐在 Devicetree 中描述引脚，在代码中通过别名获取，减少对具体板卡和引脚编号的依赖。
+
+#+begin_src dts
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+    leds {
+        compatible = "gpio-leds";
+
+        status_led: status_led {
+            gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
+        };
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+
+        user_button: user_button {
+            gpios = <&gpio0 11 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            zephyr,code = <INPUT_KEY_0>;
+        };
+    };
+
+    aliases {
+        led0 = &status_led;
+        sw0 = &user_button;
+    };
+};
+#+end_src
+
+=&gpio0=、引脚号和有效电平必须按实际开发板原理图修改。若开发板已经定义了 =led0= 或 =sw0=，通常不需要重复添加。
+*** 输出示例：闪烁 LED
+#+begin_src c
+#include <errno.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/kernel.h>
+
+#define LED_NODE DT_ALIAS(led0)
+
+static const struct gpio_dt_spec led =
+    GPIO_DT_SPEC_GET(LED_NODE, gpios);
+
+int main(void)
+{
+    if (!gpio_is_ready_dt(&led)) {
+        return -ENODEV;
+    }
+
+    if (gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE) < 0) {
+        return -EIO;
+    }
+
+    while (1) {
+        gpio_pin_toggle_dt(&led);
+        k_sleep(K_MSEC(500));
+    }
+
+    return 0;
+}
+#+end_src
+*** 输入示例：读取按键
+#+begin_src c
+#define BUTTON_NODE DT_ALIAS(sw0)
+
+static const struct gpio_dt_spec button =
+    GPIO_DT_SPEC_GET(BUTTON_NODE, gpios);
+
+int read_button(void)
+{
+    if (!gpio_is_ready_dt(&button)) {
+        return -ENODEV;
+    }
+
+    if (gpio_pin_configure_dt(&button, GPIO_INPUT) < 0) {
+        return -EIO;
+    }
+
+    /* 返回 1 表示按键处于有效状态，返回 0 表示无效。 */
+    return gpio_pin_get_dt(&button);
+}
+#+end_src
+*** 输入示例：按键中断
+#+begin_src c
+static struct gpio_callback button_cb;
+
+static void button_pressed(const struct device *port,
+                           struct gpio_callback *cb,
+                           gpio_port_pins_t pins)
+{
+    /* 中断上下文中只做简短处理。 */
+}
+
+int configure_button_interrupt(void)
+{
+    int ret;
+
+    if (!gpio_is_ready_dt(&button)) {
+        return -ENODEV;
+    }
+
+    ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = gpio_pin_interrupt_configure_dt(
+        &button, GPIO_INT_EDGE_TO_ACTIVE);
+    if (ret < 0) {
+        return ret;
+    }
+
+    gpio_init_callback(&button_cb, button_pressed, BIT(button.pin));
+    return gpio_add_callback(button.port, &button_cb);
+}
+#+end_src
+*** 常用 API
+- =gpio_is_ready_dt()=：检查 GPIO 控制器是否已就绪
+- =gpio_pin_configure_dt()=：配置输入、输出、上下拉等模式
+- =gpio_pin_set_dt()=：设置逻辑有效或无效状态
+- =gpio_pin_get_dt()=：读取逻辑状态
+- =gpio_pin_toggle_dt()=：翻转输出状态
+- =gpio_pin_interrupt_configure_dt()=：配置 GPIO 中断
+- =gpio_add_callback()=：注册中断回调
+*** 排查
+- 编译失败提示别名不存在：检查 =DT_ALIAS(led0)= 或 =DT_ALIAS(sw0)= 是否已在板级 DTS 或 overlay 中定义。
+- 返回 =-ENODEV=：GPIO 控制器可能未启用，或设备尚未就绪。
+- 输入值随机变化：检查是否浮空，并启用合适的上拉或下拉。
+- LED 逻辑相反：检查 =GPIO_ACTIVE_HIGH= 和 =GPIO_ACTIVE_LOW=。
+- 中断重复触发：检查边沿设置，并对机械按键消抖。
+- 构建后可检查 =build/zephyr/zephyr.dts=，确认最终生成的 Devicetree 配置。
+* 参考
+- [[https://docs.zephyrproject.org/latest/hardware/peripherals/gpio.html][Zephyr GPIO 文档]]
+- [[https://docs.zephyrproject.org/latest/build/dts/api/bindings/led/gpio-leds.html][Zephyr gpio-leds binding]]
+- [[https://docs.zephyrproject.org/latest/build/dts/api/bindings/input/gpio-keys.html][Zephyr gpio-keys binding]]

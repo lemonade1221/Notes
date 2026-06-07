@@ -1,0 +1,45 @@
+:PROPERTIES:
+:ID:       D67DC84C-0A2C-4537-8FF5-3AFFA7C2CB5A
+:END:
+#+title: .overlay
+* Zephyr .overlay（Device Tree Overlay）
+** 作用
+
+# 修改硬件配置
+# 启用外设
+# 配置引脚
+# 添加设备
+
+** 基本语法
+# 修改节点
+&node {
+    property = value;
+};
+
+# 新增节点
+/ {
+    device {
+        compatible = "xxx";
+    };
+};
+
+** 常用操作
+# 启用外设
+status = "okay";
+# 设置引脚
+pinctrl-0
+# 设置通信速率
+current-speed
+# 绑定驱动
+compatible
+# 定义设备地址
+reg
+** 常见节点
+# UART
+&uart4
+# SPI
+&spi1
+# I2C
+&i2c1
+# GPIO
+&gpioa

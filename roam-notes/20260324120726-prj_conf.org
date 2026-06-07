@@ -1,0 +1,119 @@
+:PROPERTIES:
+:ID:       495B29B4-3D34-43B4-9B71-293D4DBF4931
+:END:
+#+title: prj.conf
+
+* 1. prj.conf 是一个Kconfig 配置文件，用于：
+
+- 启用/关闭内核功能
+- 选择驱动（UART、SPI、I2C 等）
+- 设置线程、内存、调度策略
+- 配置日志、调试选项
+- 启用网络、文件系统等组件
+* 2.Zephyr prj.conf 常用关键字
+** 1.内核 / 线程
+# 主线程堆栈大小
+CONFIG_MAIN_STACK_SIZE
+# 系统工作队列堆栈
+CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE
+# 协作式线程优先级数量
+CONFIG_NUM_COOP_PRIORITIES
+# 抢占式线程优先级数量
+CONFIG_NUM_PREEMPT_PRIORITIES
+# 启用多线程
+CONFIG_MULTITHREADING
+** 2.内存管理
+# 堆内存大小
+CONFIG_HEAP_MEM_POOL_SIZEr
+# 启用动态内存分配
+CONFIG_HEAP_MEM_POOL
+# 使用 newlib libc
+CONFIG_NEWLIB_LIBC
+# 启用浮点 printf（重要）
+CONFIG_NEWLIB_LIBC_FLOAT_PRINTF
+** 3.外设驱动
+# GPIO
+CONFIG_GPIO
+# UART 串口
+CONFIG_UART
+# I2C
+CONFIG_I2C
+# SPI
+CONFIG_SPI
+# ADC
+CONFIG_ADC
+# PWM
+CONFIG_PWM
+** 4.控制台 / 串口输出
+# 启用串口驱动
+CONFIG_SERIAL
+# 启用控制台
+CONFIG_CONSOLE
+# 使用 UART 作为控制台
+CONFIG_UART_CONSOLE
+# 控制台输出缓冲区
+CONFIG_CONSOLE_INPUT_BUFFER_SIZE
+** 5.日志系统
+# 启用日志
+CONFIG_LOG
+# 默认日志等级
+CONFIG_LOG_DEFAULT_LEVEL
+# 异步日志
+CONFIG_LOG_MODE_DEFERRED
+# 日志缓冲区大小
+CONFIG_LOG_BUFFER_SIZE
+** 6.调试相关
+# 启用断言
+CONFIG_ASSERT
+# 启用调试优化
+CONFIG_DEBUG
+# 栈溢出检测
+CONFIG_STACK_SENTINEL
+# 栈使用监测
+CONFIG_THREAD_STACK_INFO
+** 7.性能 / 优化
+# 启用硬件浮点单元（FPU）
+CONFIG_FPU
+# 编译速度优化
+CONFIG_SPEED_OPTIMIZATIONS
+# 启用 DSP 指令（部分平台）
+CONFIG_DSP
+# 启用 ARM CMSIS
+CONFIG_CMSIS
+** 8.时间与定时器
+# 系统时钟频率
+CONFIG_SYS_CLOCK_TICKS_PER_SEC
+# 启用定时器
+CONFIG_TIMERS
+# 启用延时函数
+CONFIG_SYS_CLOCK_EXISTS
+** 9.电源管理
+# 启用电源管理
+CONFIG_PM
+# 启用低功耗模式
+CONFIG_PM_DEVICE
+** 10.文件系统 / 存储
+# 启用文件系统支持
+CONFIG_FILE_SYSTEM
+# LittleFS
+CONFIG_FS_LITTLEFS
+# FAT 文件系统
+CONFIG_FS_FATFS
+** 11.网络（如果用）
+# 启用网络栈
+CONFIG_NETWORKING
+# TCP/IP
+CONFIG_NET_TCP
+# UDP
+CONFIG_NET_UDP
+# MQTT
+CONFIG_MQTT_LIB
+** 12.开发辅助（强烈推荐）
+# menuconfig 支持
+CONFIG_KCONFIG
+# shell 命令行
+CONFIG_SHELL
+# 串口 shell
+CONFIG_SHELL_BACKEND_SERIAL
+# shell 缓冲区
+CONFIG_SHELL_BUFFER_SIZE

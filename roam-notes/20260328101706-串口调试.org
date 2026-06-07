@@ -1,0 +1,18 @@
+:PROPERTIES:
+:ID:       B901501F-BA3C-4CBF-AF16-CC90D5DE11CB
+:END:
+#+title: 串口调试
+
+* 查看串口占用
+#+begin_src 
+ls /dev/tty.*
+#+end_src
+* 查看串口内容
+#+begin_src 
+screen /dev/tty.usbmodemXXXX 115200
+#+end_src
+这里的 XXXX换成串口号
+* 退出窗口
+#+begin_src 
+C-a k
+#+end_src

@@ -1,0 +1,89 @@
+:PROPERTIES:
+:ID:       A5342420-CC82-4119-B705-E432812FFFA6
+:END:
+#+title: west build
+* DONE 初始化工作区                                                   :setup:
+  DEADLINE: <2026-03-25 Wed>
+  - [X] 创建 workspace
+  - [X] 初始化 west
+  - [X] 拉取 zephyr
+
+#+BEGIN_SRC shell
+mkdir -p ~/zephyrproject
+cd ~/zephyrproject
+west init -l zephyr
+west update
+#+END_SRC
+
+
+* TODO 配置开发环境 :env:
+  - [X] 安装 Zephyr SDK
+  - [X]  配置环境变量
+  - [X] 安装 Python 依赖
+
+#+BEGIN_SRC shell
+pip install -r zephyr/scripts/requirements.txt
+#+END_SRC
+
+
+* TODO 创建项目 :project:
+  - [ ] 新建 app 目录
+  - [ ] 编写 CMakeLists.txt
+  - [ ] 编写 prj.conf
+
+#+BEGIN_SRC shell
+cd ~/zephyrproject
+west build -b stm32h747i_disco samples/hello_world
+#+END_SRC
+
+
+* DOING 编译项目 :build:
+  SCHEDULED: <2026-03-24 Wed>
+
+  - [ ] clean build
+  - [ ] debug build
+  - [ ] release build
+
+** Clean Build
+#+BEGIN_SRC shell
+west build -b stm32h747i_disco -p always samples/hello_world
+#+END_SRC
+
+** Incremental Build
+#+BEGIN_SRC shell
+west build
+#+END_SRC
+
+
+* TODO 烧录与调试 :flash:
+  - [ ] 连接开发板
+  - [ ] 烧录固件
+  - [ ] 打开串口
+
+#+BEGIN_SRC shell
+west flash
+#+END_SRC
+
+
+* TODO 日志与验证 :test:
+  - [ ] 串口输出检查
+  - [ ] 功能验证
+  - [ ] 性能测试
+
+#+BEGIN_SRC shell
+minicom -D /dev/ttyUSB0
+#+END_SRC
+
+
+* TODO 问题记录 :debug:
+** 编译错误
+- error: missing board config
+- error: cmake failed
+
+** 解决方法
+- 检查 ZEPHYR_BASE
+- 重新 west update
+
+
+* DONE 第一次成功构建 🎉
+  CLOSED: [2026-03-24 Wed]
