@@ -22,7 +22,6 @@
         compatible = "xxx";
     };
 };
-
 ** 常用操作
 # 启用外设
 status = "okay";

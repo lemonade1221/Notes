@@ -18,8 +18,8 @@ west update
 
 * TODO 配置开发环境 :env:
   - [X] 安装 Zephyr SDK
-  - [ ] 配置环境变量
-  - [ ] 安装 Python 依赖
+  - [X]  配置环境变量
+  - [X] 安装 Python 依赖
 
 #+BEGIN_SRC shell
 pip install -r zephyr/scripts/requirements.txt
