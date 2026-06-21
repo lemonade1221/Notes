@@ -1,0 +1,253 @@
+:PROPERTIES:
+:ID:       79893049-1638-400B-BA6E-2C2C684D0F41
+:END:
+#+title: Backpropagation
+#+filetags: :machine-learning:deep-learning:gradient:
+#+startup: latexpreview
+* 反向传播是什么
+Backwards propagation 更常见的写法是 *backpropagation* 或 *backward propagation*，中文通常叫 *反向传播*。
+
+反向传播的目标是：在神经网络完成一次前向计算之后，高效计算损失函数对每一层参数的梯度。
+
+它本身不是优化器。反向传播只负责算梯度；真正更新参数的是梯度下降、SGD、Adam 等优化算法。
+
+核心思想可以压缩成一句话：
+
+#+begin_quote
+把最终损失对输出的影响，沿着计算图从后往前传回去，并在每个节点用链式法则计算局部梯度。
+#+end_quote
+
+* 为什么需要反向传播
+如果网络有很多层，直接手动求每个参数的偏导会非常低效，而且容易重复计算。
+
+反向传播利用链式法则，把中间梯度缓存并复用，使得计算所有参数梯度的代价和一次前向传播同阶。
+
+例如一个复合函数：
+
+\[
+L = f(g(h(x)))
+\]
+
+对 \(x\) 求导时：
+
+\[
+\frac{\partial L}{\partial x}
+= \frac{\partial f}{\partial g}
+  \frac{\partial g}{\partial h}
+  \frac{\partial h}{\partial x}
+\]
+
+反向传播就是把这件事推广到大型计算图和矩阵运算上。
+
+* 基本符号
+以第 \(l\) 层全连接网络为例：
+
+\[
+z^{[l]} = W^{[l]}a^{[l-1]} + b^{[l]}
+\]
+
+\[
+a^{[l]} = \sigma(z^{[l]})
+\]
+
+其中：
+
+- \(W^{[l]}\)：第 \(l\) 层权重矩阵
+- \(b^{[l]}\)：第 \(l\) 层偏置
+- \(z^{[l]}\)：线性部分输出
+- \(a^{[l]}\)：激活函数输出
+- \(\sigma\)：激活函数，例如 ReLU、sigmoid、tanh
+- \(L\)：损失函数
+
+* 前向传播
+前向传播从输入开始逐层计算：
+
+\[
+a^{[0]} = x
+\]
+
+\[
+z^{[1]} = W^{[1]}a^{[0]} + b^{[1]}
+\]
+
+\[
+a^{[1]} = \sigma(z^{[1]})
+\]
+
+一直计算到输出层，得到预测值 \(\hat{y}\)，再用损失函数比较 \(\hat{y}\) 和真实标签 \(y\)。
+
+常见损失函数包括：
+
+- 均方误差：用于回归
+- 交叉熵：用于分类
+
+* 反向传播的核心量 delta
+反向传播常用一个误差信号：
+
+\[
+\delta^{[l]} = \frac{\partial L}{\partial z^{[l]}}
+\]
+
+它表示损失函数对第 \(l\) 层线性输出 \(z^{[l]}\) 的敏感程度。
+
+一旦知道 \(\delta^{[l]}\)，这一层参数的梯度就很容易得到：
+
+\[
+\frac{\partial L}{\partial W^{[l]}}
+= \delta^{[l]}(a^{[l-1]})^T
+\]
+
+\[
+\frac{\partial L}{\partial b^{[l]}}
+= \delta^{[l]}
+\]
+
+* 输出层梯度
+输出层的 \(\delta\) 取决于损失函数和输出激活函数。
+
+如果使用 sigmoid 输出和二分类交叉熵，常见简化结果是：
+
+\[
+\delta^{[L]} = a^{[L]} - y
+\]
+
+如果没有这个简化，就按链式法则写：
+
+\[
+\delta^{[L]}
+= \frac{\partial L}{\partial a^{[L]}}
+  \odot \sigma'(z^{[L]})
+\]
+
+其中 \(\odot\) 表示逐元素相乘。
+
+* 隐藏层梯度
+隐藏层的误差信号由后一层传回来：
+
+\[
+\delta^{[l]}
+= (W^{[l+1]})^T \delta^{[l+1]}
+  \odot \sigma'(z^{[l]})
+\]
+
+这就是“反向”的含义：
+
+- 前向传播：从输入到输出
+- 反向传播：从输出损失往输入方向传梯度
+
+* 参数更新
+反向传播算出梯度后，优化器负责更新参数。
+
+以普通梯度下降为例：
+
+\[
+W^{[l]} := W^{[l]} - \alpha \frac{\partial L}{\partial W^{[l]}}
+\]
+
+\[
+b^{[l]} := b^{[l]} - \alpha \frac{\partial L}{\partial b^{[l]}}
+\]
+
+其中 \(\alpha\) 是学习率。
+
+* 算法流程
+一次训练迭代通常是：
+
+1. 输入一个 batch 的训练数据
+2. 前向传播，计算每一层的 \(z\) 和 \(a\)
+3. 根据输出和标签计算损失 \(L\)
+4. 从输出层开始计算 \(\delta^{[L]}\)
+5. 逐层向前计算 \(\delta^{[l]}\)
+6. 得到每层的 \(\partial L / \partial W\) 和 \(\partial L / \partial b\)
+7. 使用优化器更新参数
+
+* 一个简单例子
+假设只有一个神经元：
+
+\[
+z = wx + b
+\]
+
+\[
+\hat{y} = z
+\]
+
+使用均方误差：
+
+\[
+L = \frac{1}{2}(\hat{y} - y)^2
+\]
+
+先求损失对预测值的导数：
+
+\[
+\frac{\partial L}{\partial \hat{y}} = \hat{y} - y
+\]
+
+因为 \(\hat{y} = wx + b\)，所以：
+
+\[
+\frac{\partial \hat{y}}{\partial w} = x
+\]
+
+\[
+\frac{\partial \hat{y}}{\partial b} = 1
+\]
+
+根据链式法则：
+
+\[
+\frac{\partial L}{\partial w}
+= (\hat{y} - y)x
+\]
+
+\[
+\frac{\partial L}{\partial b}
+= \hat{y} - y
+\]
+
+这就是最小版本的反向传播。
+
+* 常见误区
+** 反向传播不是“让数据反着走”
+反向传播传的是梯度，不是输入数据本身。
+
+** 反向传播不是优化器
+反向传播计算梯度，优化器使用梯度更新参数。
+
+** 梯度消失和梯度爆炸
+当网络很深时，链式法则会不断相乘。如果乘积长期小于 1，梯度可能越来越小；如果长期大于 1，梯度可能越来越大。
+
+缓解方式包括：
+
+- 使用 ReLU 等激活函数
+- 合理初始化参数
+- Batch Normalization / Layer Normalization
+- 残差连接
+- 梯度裁剪
+
+** 激活函数会影响梯度传播
+sigmoid 在输入很大或很小时导数接近 0，容易导致梯度消失。ReLU 在正区间导数为 1，因此常用于深层网络。
+
+* 和自动微分的关系
+现代深度学习框架，例如 PyTorch、TensorFlow、JAX，通常不要求手写反向传播。
+
+它们会在前向传播时构建计算图，然后用自动微分自动完成反向传播。
+
+在 PyTorch 中，大致流程是：
+
+#+begin_src python
+  loss = criterion(model(x), y)
+  loss.backward()
+  optimizer.step()
+  optimizer.zero_grad()
+#+end_src
+
+其中：
+
+- ~loss.backward()~：执行反向传播，计算梯度
+- ~optimizer.step()~：根据梯度更新参数
+- ~optimizer.zero_grad()~：清空上一轮累积的梯度
+
+* 一句话总结
+反向传播就是把损失函数的变化量，按照链式法则从输出层传回每一层，从而高效计算所有参数的梯度。

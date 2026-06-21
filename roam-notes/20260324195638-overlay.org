@@ -12,16 +12,21 @@
 
 ** 基本语法
 # 修改节点
+#+begin_src dts
 &node {
     property = value;
 };
+#+end_src
 
 # 新增节点
+#+begin_src dts
 / {
     device {
         compatible = "xxx";
     };
 };
+#+end_src
+
 ** 常用操作
 # 启用外设
 status = "okay";
